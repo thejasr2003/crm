@@ -90,20 +90,7 @@ function mapToEnumOrOther<T extends string>(
 }
 
 export async function POST(req: NextRequest) {
-  let body: {
-    employeeName: string;
-    replacementReason: string;
-    replacementToDate: string;
-    replacementRequestDate: string;
-    companySelect: string;
-    companyNameGST: string;
-    status: string;
-    technology: string | "other";
-    industry: string | "other";
-    percentage: number;
-    remarks: string;
-    spocs: string[];
-  };
+  let body: unknown;
   try {
     // Check content-type header
     const contentType = req.headers.get("content-type");
@@ -143,7 +130,7 @@ export async function POST(req: NextRequest) {
       percentage,
       remarks,
       spocs,
-    } = body;
+    } = body as Record<string, any>;
 
     // // Validate required fields
     // if (!salesName || !companyName) {
@@ -174,7 +161,6 @@ export async function POST(req: NextRequest) {
         companysize,
         companyID: companyID ? companyID : null,
         numberOfEmployees,
-        employeeID,
         employeeName,
         replacementReason,
         replacementToDate: replacementToDate ? new Date(replacementToDate) : null,
@@ -203,11 +189,11 @@ export async function POST(req: NextRequest) {
     return withCors(NextResponse.json(lead, { status: 201 }));
   } catch (error: unknown) {
     // Prisma validation errors
-    if (typeof error === "object" && error && "code" in error && (error as { code: string }).code === "P2002") {
+    if (typeof error === "object" && error && "code" in error && (error as any).code === "P2002") {
       // Unique constraint failed
       return withCors(
         NextResponse.json(
-          { error: "Duplicate entry", details: (error as { meta: unknown }).meta },
+          { error: "Duplicate entry", details: (error as any).meta },
           { status: 409 }
         )
       );

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     // Convert poNumber to Int or null
     const poNumber = poNumberRaw === '' ? null : parseInt(poNumberRaw, 10);
-    if (poNumberRaw !== '' && isNaN(poNumber)) {
+    if (poNumberRaw !== '' && (poNumber === null || isNaN(poNumber))) {
       return NextResponse.json({ success: false, message: 'Invalid PO Number' }, { status: 400 });
     }
 

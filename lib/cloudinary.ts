@@ -3,7 +3,29 @@ import { prisma } from '@/lib/prisma';
 import { verifyJwtToken } from '@/lib/jwt';
 import { AgreementType, Technology } from '@prisma/client';
 import { cookies } from 'next/headers';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+// Removed circular import of uploadToCloudinary
+
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export const uploadToCloudinary = async (file: Buffer, fileName: string) => {
+  return new Promise<string | null>((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(
+        { public_id: fileName, resource_type: 'auto' },
+        (error, result) => {
+          if (error || !result) return reject(error);
+          resolve(result.secure_url);
+        }
+      )
+      .end(file);
+  });
+};
 
 const verifyAuth = async () => {
   const cookieStore = await cookies();
@@ -42,7 +64,7 @@ export async function POST(request: Request) {
     if (file && file.size > 0) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      // Use your helper to upload to Cloudinary
+      // Use the helper directly
       fileUploadPath = await uploadToCloudinary(buffer, file.name);
       if (!fileUploadPath) {
         return NextResponse.json({ success: false, message: 'File upload to Cloudinary failed' }, { status: 500 });
@@ -59,7 +81,7 @@ export async function POST(request: Request) {
         endDate: endDate ? new Date(endDate) : new Date(),
         technology: technology ? (technology as Technology) : null,
         otherTechnology: technology === 'other' ? (otherTechnology || '') : null,
-        poNumber: poNumber || null,
+        poNumber: poNumber ? Number(poNumber) : null,
         fileUpload: fileUploadPath,
       },
     });
